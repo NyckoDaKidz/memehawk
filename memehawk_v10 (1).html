@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MemeHawk — Memecoin Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+:root{
+  --lime:#C6F135;
+  --pink:#FF2D78;
+  --cyan:#00F5FF;
+  --orange:#FF6B00;
+  --purple:#BF00FF;
+  --yellow:#FFE500;
+  --dark:#0A0A0A;
+  --darker:#050505;
+}
+
+body{
+  background:var(--darker);
+  font-family:'Rajdhani',sans-serif;
+  overflow-x:hidden;
+  cursor:crosshair;
+}
+
+/* ── GRAFFITI WALL BACKGROUND ── */
+.wall{
+  position:fixed;inset:0;
+  background:
+    repeating-linear-gradient(0deg,transparent,transparent 60px,rgba(255,255,255,0.015) 60px,rgba(255,255,255,0.015) 61px),
+    repeating-linear-gradient(90deg,transparent,transparent 60px,rgba(255,255,255,0.015) 60px,rgba(255,255,255,0.015) 61px),
+    #0d0d0d;
+  z-index:0;
+}
+
+/* Brick texture overlay */
+.wall::before{
+  content:'';position:absolute;inset:0;
+  background-image:
+    repeating-linear-gradient(180deg,transparent 0px,transparent 28px,rgba(0,0,0,0.4) 28px,rgba(0,0,0,0.4) 30px),
+    repeating-linear-gradient(0deg,transparent 0px,transparent 58px,rgba(0,0,0,0.25) 58px,rgba(0,0,0,0.25) 60px);
+  opacity:0.6;
+}
+
+/* Paint splatters */
+.splat{position:absolute;border-radius:50%;filter:blur(40px);opacity:0.12;pointer-events:none;}
+.s1{width:600px;height:600px;background:var(--pink);top:-100px;left:-150px;}
+.s2{width:500px;height:500px;background:var(--cyan);top:200px;right:-100px;}
+.s3{width:700px;height:400px;background:var(--purple);bottom:100px;left:200px;}
+.s4{width:400px;height:400px;background:var(--lime);bottom:-100px;right:200px;}
+.s5{width:300px;height:300px;background:var(--orange);top:40%;left:40%;}
+
+/* ── MEME CHARACTERS (SVG inline) ── */
+.characters{position:fixed;inset:0;pointer-events:none;z-index:1;}
+
+/* DOGE */
+.char-doge{
+  position:absolute;bottom:60px;left:30px;
+  animation:wobble 3s ease-in-out infinite;
+  font-size:100px;line-height:1;
+  filter:drop-shadow(0 0 20px #FFE500);
+}
+/* PEPE */
+.char-pepe{
+  position:absolute;top:80px;right:40px;
+  animation:wobble 4s ease-in-out infinite 0.5s;
+  font-size:90px;line-height:1;
+  filter:drop-shadow(0 0 20px #00FF88);
+}
+/* SHIB */
+.char-shib{
+  position:absolute;top:55%;left:20px;
+  animation:wobble 3.5s ease-in-out infinite 1s;
+  font-size:75px;line-height:1;
+  filter:drop-shadow(0 0 15px #FF6B00);
+}
+/* BONK */
+.char-bonk{
+  position:absolute;bottom:100px;right:60px;
+  animation:bounce 2s ease-in-out infinite;
+  font-size:85px;line-height:1;
+  filter:drop-shadow(0 0 20px var(--cyan));
+}
+/* WIF */
+.char-wif{
+  position:absolute;top:30%;right:25px;
+  animation:spin-slow 8s linear infinite;
+  font-size:70px;line-height:1;
+  filter:drop-shadow(0 0 15px var(--pink));
+}
+/* BEAR */
+.char-brett{
+  position:absolute;top:15%;left:15px;
+  animation:wobble 5s ease-in-out infinite 2s;
+  font-size:65px;line-height:1;
+  filter:drop-shadow(0 0 15px var(--pink));
+}
+
+@keyframes wobble{
+  0%,100%{transform:rotate(-5deg) scale(1);}
+  50%{transform:rotate(5deg) scale(1.05);}
+}
+@keyframes bounce{
+  0%,100%{transform:translateY(0) rotate(-3deg);}
+  50%{transform:translateY(-20px) rotate(3deg);}
+}
+@keyframes spin-slow{
+  from{transform:rotate(0deg);}
+  to{transform:rotate(360deg);}
+}
+
+/* Graffiti tags */
+.tag{
+  position:absolute;
+  font-family:'Permanent Marker',cursive;
+  font-size:28px;
+  opacity:0.15;
+  pointer-events:none;
+  transform:rotate(-8deg);
+}
+.tag1{top:12%;left:8%;color:var(--cyan);font-size:38px;transform:rotate(-12deg);}
+.tag2{top:35%;right:8%;color:var(--pink);font-size:32px;transform:rotate(6deg);}
+.tag3{bottom:25%;left:12%;color:var(--lime);font-size:24px;transform:rotate(-4deg);}
+.tag4{top:60%;right:15%;color:var(--yellow);font-size:20px;transform:rotate(10deg);}
+.tag5{bottom:15%;left:35%;color:var(--purple);font-size:28px;transform:rotate(-6deg);}
+
+/* ── MAIN CONTENT ── */
+.content{
+  position:relative;z-index:10;
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;
+  padding:30px 20px 60px;
+}
+
+/* ── HEADER ── */
+.logo-wrap{
+  text-align:center;
+  margin-bottom:10px;
+  animation:pop-in 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.logo-emoji{font-size:64px;filter:drop-shadow(0 0 30px var(--lime));display:block;margin-bottom:-10px;}
+.logo-title{
+  font-family:'Bangers',cursive;
+  font-size:clamp(52px,10vw,88px);
+  letter-spacing:6px;
+  line-height:1;
+  background:linear-gradient(135deg,var(--lime) 0%,var(--cyan) 40%,var(--pink) 80%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 20px rgba(198,241,53,0.4));
+  -webkit-text-stroke:1px rgba(255,255,255,0.1);
+}
+.logo-sub{
+  font-family:'Bangers',cursive;
+  font-size:clamp(16px,3vw,22px);
+  letter-spacing:8px;
+  margin-top:4px;
+  background:linear-gradient(90deg,var(--cyan),var(--pink),var(--cyan),var(--pink));
+  background-size:300% 100%;
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  animation:gradient-shift 4s ease-in-out infinite;
+}
+@keyframes gradient-shift{
+  0%{background-position:0% 50%;}
+  50%{background-position:100% 50%;}
+  100%{background-position:0% 50%;}
+}
+
+.badge-new{
+  display:inline-block;
+  background:var(--pink);
+  color:#fff;
+  font-family:'Bangers',cursive;
+  font-size:13px;
+  letter-spacing:2px;
+  padding:3px 12px;
+  border-radius:20px;
+  margin-top:8px;
+  animation:pulse-badge 1.5s ease-in-out infinite;
+  box-shadow:0 0 20px var(--pink);
+}
+@keyframes pulse-badge{
+  0%,100%{box-shadow:0 0 10px var(--pink);}
+  50%{box-shadow:0 0 30px var(--pink),0 0 60px rgba(255,45,120,0.3);}
+}
+
+@keyframes pop-in{
+  0%{opacity:0;transform:scale(0.5) translateY(-30px);}
+  100%{opacity:1;transform:scale(1) translateY(0);}
+}
+
+/* ── TICKER STRIP ── */
+.ticker-wrap{
+  width:100%;max-width:900px;
+  overflow:hidden;
+  background:rgba(0,0,0,0.7);
+  border:1px solid rgba(198,241,53,0.3);
+  border-radius:6px;
+  margin:18px 0 24px;
+  padding:10px 0;
+  backdrop-filter:blur(10px);
+}
+.ticker-track{
+  display:flex;gap:40px;
+  animation:ticker 18s linear infinite;
+  white-space:nowrap;
+}
+.ticker-item{
+  font-family:'Bangers',cursive;
+  font-size:16px;
+  letter-spacing:2px;
+  flex-shrink:0;
+}
+.up{color:var(--lime);text-shadow:0 0 10px var(--lime);}
+.dn{color:var(--pink);text-shadow:0 0 10px var(--pink);}
+@keyframes ticker{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+
+/* ── STATS ROW ── */
+.stats-row{
+  display:flex;gap:12px;flex-wrap:wrap;justify-content:center;
+  margin-bottom:24px;
+  width:100%;max-width:900px;
+}
+.stat-pill{
+  background:rgba(0,0,0,0.65);
+  border:1px solid;
+  border-radius:30px;
+  padding:8px 20px;
+  display:flex;align-items:center;gap:8px;
+  backdrop-filter:blur(8px);
+  font-size:15px;font-weight:600;
+  animation:pop-in 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.stat-pill:nth-child(1){border-color:var(--lime);color:var(--lime);animation-delay:0.1s;}
+.stat-pill:nth-child(2){border-color:var(--cyan);color:var(--cyan);animation-delay:0.2s;}
+.stat-pill:nth-child(3){border-color:var(--pink);color:var(--pink);animation-delay:0.3s;}
+.stat-pill:nth-child(4){border-color:var(--yellow);color:var(--yellow);animation-delay:0.4s;}
+.stat-dot{width:8px;height:8px;border-radius:50%;animation:blink 1s ease-in-out infinite;}
+.stat-pill:nth-child(1) .stat-dot{background:var(--lime);box-shadow:0 0 8px var(--lime);}
+.stat-pill:nth-child(2) .stat-dot{background:var(--cyan);box-shadow:0 0 8px var(--cyan);}
+.stat-pill:nth-child(3) .stat-dot{background:var(--pink);box-shadow:0 0 8px var(--pink);}
+.stat-pill:nth-child(4) .stat-dot{background:var(--yellow);box-shadow:0 0 8px var(--yellow);}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;};}
+
+/* ── MAIN GRID ── */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:16px;
+  width:100%;max-width:900px;
+  margin-bottom:24px;
+}
+
+/* ── COIN CARD ── */
+.card{
+  background:rgba(10,10,10,0.82);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:16px;
+  padding:18px;
+  position:relative;
+  overflow:hidden;
+  backdrop-filter:blur(12px);
+  transition:transform 0.2s,border-color 0.2s,box-shadow 0.2s;
+  cursor:pointer;
+  animation:pop-in 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.card:hover{transform:translateY(-4px) scale(1.01);}
+.card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,0.03) 0%,transparent 60%);
+  pointer-events:none;
+}
+.card.hot{border-color:var(--pink);box-shadow:0 0 20px rgba(255,45,120,0.15);}
+.card.hot:hover{box-shadow:0 0 40px rgba(255,45,120,0.3);}
+.card.new{border-color:var(--lime);box-shadow:0 0 20px rgba(198,241,53,0.1);}
+.card.new:hover{box-shadow:0 0 40px rgba(198,241,53,0.25);}
+.card.whale{border-color:var(--cyan);box-shadow:0 0 20px rgba(0,245,255,0.1);}
+.card.whale:hover{box-shadow:0 0 40px rgba(0,245,255,0.25);}
+.card:nth-child(1){animation-delay:0.05s;}
+.card:nth-child(2){animation-delay:0.1s;}
+.card:nth-child(3){animation-delay:0.15s;}
+.card:nth-child(4){animation-delay:0.2s;}
+.card:nth-child(5){animation-delay:0.25s;}
+.card:nth-child(6){animation-delay:0.3s;}
+
+/* card corner tag */
+.card-corner{
+  position:absolute;top:12px;right:12px;
+  font-family:'Bangers',cursive;
+  font-size:11px;letter-spacing:1.5px;
+  padding:2px 8px;border-radius:10px;
+}
+.card.hot .card-corner{background:var(--pink);color:#fff;}
+.card.new .card-corner{background:var(--lime);color:#000;}
+.card.whale .card-corner{background:var(--cyan);color:#000;}
+
+.coin-emoji-wrap{display:flex;align-items:center;justify-content:center;width:48px;height:48px;flex-shrink:0;}
+.coin-logo{width:48px;height:48px;border-radius:50%;object-fit:cover;filter:drop-shadow(0 0 8px rgba(255,255,255,0.2));}
+.coin-emoji-fallback{font-size:38px;line-height:1;}
+.card-link-hint{
+  position:absolute;top:12px;left:12px;
+  font-size:10px;letter-spacing:1px;font-weight:600;
+  color:rgba(255,255,255,0.2);
+  opacity:0;transition:opacity 0.2s;
+}
+.card:hover .card-link-hint{opacity:1;}
+
+.card-header{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.coin-emoji{font-size:38px;filter:drop-shadow(0 0 8px rgba(255,255,255,0.3));}
+.coin-info{}
+.coin-name{
+  font-family:'Bangers',cursive;
+  font-size:22px;letter-spacing:2px;color:#fff;line-height:1;
+}
+.coin-sym{font-size:12px;color:rgba(255,255,255,0.4);letter-spacing:2px;font-weight:600;}
+
+.price-row{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:12px;}
+.price-val{font-size:20px;font-weight:700;color:#fff;letter-spacing:1px;}
+.price-chg{
+  font-family:'Bangers',cursive;font-size:20px;letter-spacing:1px;
+}
+.price-chg.pos{color:var(--lime);text-shadow:0 0 10px var(--lime);}
+.price-chg.neg{color:var(--pink);text-shadow:0 0 10px var(--pink);}
+
+/* mini bar */
+.bar-wrap{height:6px;background:rgba(255,255,255,0.07);border-radius:4px;margin-bottom:12px;overflow:visible;position:relative;}
+.bar-fill{
+  height:100%;border-radius:4px;
+  transition:width 1.2s cubic-bezier(0.4,0,0.2,1);
+  position:relative;
+}
+.card.hot .bar-fill{background:linear-gradient(90deg,var(--cyan),var(--pink));}
+.card.new .bar-fill{background:linear-gradient(90deg,var(--cyan),var(--pink));}
+.card.whale .bar-fill{background:linear-gradient(90deg,var(--cyan),var(--pink));}
+
+/* Gold max state */
+.bar-fill.bar-max{
+  background:linear-gradient(90deg,#f5c518,#FFD700,#FFF176,#FFD700,#f5c518) !important;
+  background-size:200% 100% !important;
+  animation:gold-shimmer 1.2s linear infinite !important;
+  box-shadow:0 0 8px rgba(255,215,0,0.6), 0 0 18px rgba(255,215,0,0.3);
+}
+.bar-fill.bar-max::after{
+  content:'';
+  position:absolute;right:-4px;top:50%;transform:translateY(-50%);
+  width:10px;height:10px;border-radius:50%;
+  background:#FFD700;
+  box-shadow:0 0 6px 3px rgba(255,215,0,0.8);
+  animation:gold-pulse 0.8s ease-in-out infinite;
+}
+@keyframes gold-shimmer{
+  0%{background-position:200% 0;}
+  100%{background-position:-200% 0;}
+}
+@keyframes gold-pulse{
+  0%,100%{opacity:1;transform:translateY(-50%) scale(1);}
+  50%{opacity:0.5;transform:translateY(-50%) scale(1.6);}
+}
+
+.card-stats{display:flex;justify-content:space-between;}
+.cs-item{text-align:center;}
+.cs-label{font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:1.5px;font-weight:600;text-transform:uppercase;}
+.cs-val{font-size:14px;font-weight:700;color:rgba(255,255,255,0.85);margin-top:2px;}
+
+/* alert badge on card */
+.alert-badge{
+  display:flex;align-items:center;gap:6px;
+  margin-top:12px;padding:7px 10px;
+  background:rgba(255,255,255,0.04);
+  border-radius:8px;
+  border-left:3px solid;
+  font-size:12px;font-weight:600;letter-spacing:0.5px;
+}
+.card.hot .alert-badge{border-color:var(--pink);color:var(--pink);}
+.card.new .alert-badge{border-color:var(--lime);color:var(--lime);}
+.card.whale .alert-badge{border-color:var(--cyan);color:var(--cyan);}
+
+/* ── WHALE ALERT FEED ── */
+.whale-section{
+  width:100%;max-width:900px;
+  margin-bottom:24px;
+}
+.section-title{
+  font-family:'Bangers',cursive;
+  font-size:28px;letter-spacing:4px;
+  margin-bottom:14px;
+  display:flex;align-items:center;gap:12px;
+}
+.section-title span{
+  background:linear-gradient(90deg,var(--cyan),var(--pink));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.section-line{flex:1;height:1px;background:linear-gradient(90deg,var(--cyan),var(--pink),transparent);}
+
+.whale-feed{display:flex;flex-direction:column;gap:8px;}
+.whale-item{
+  background:rgba(0,0,0,0.7);
+  border:1px solid rgba(0,245,255,0.3);
+  border-left:3px solid var(--cyan);
+  border-radius:10px;
+  padding:12px 16px;
+  display:flex;align-items:center;gap:12px;
+  backdrop-filter:blur(8px);
+  animation:slide-in 0.4s ease both;
+  transition:border-color 0.2s, box-shadow 0.2s;
+  box-shadow:0 0 12px rgba(0,245,255,0.08);
+}
+.whale-item:hover{
+  border-color:var(--pink);
+  border-left-color:var(--pink);
+  box-shadow:0 0 25px rgba(255,45,120,0.2);
+}
+.whale-item:nth-child(2),
+.whale-item:nth-child(4){
+  border:1px solid rgba(255,45,120,0.3);
+  border-left:3px solid var(--pink);
+  box-shadow:0 0 12px rgba(255,45,120,0.08);
+}
+.whale-item:nth-child(1){animation-delay:0.1s;}
+.whale-item:nth-child(2){animation-delay:0.2s;}
+.whale-item:nth-child(3){animation-delay:0.3s;}
+.whale-item:nth-child(4){animation-delay:0.4s;}
+@keyframes slide-in{from{opacity:0;transform:translateX(-20px);}to{opacity:1;transform:none;}}
+
+.wi-icon{font-size:26px;flex-shrink:0;}
+.wi-body{flex:1;}
+.wi-title{font-size:13px;font-weight:700;color:#fff;margin-bottom:2px;}
+.wi-wallet{font-size:11px;color:rgba(255,255,255,0.3);font-family:monospace;}
+.wi-right{text-align:right;flex-shrink:0;}
+.wi-amount{font-family:'Bangers',cursive;font-size:18px;letter-spacing:1px;}
+.wi-amount.buy{color:var(--lime);}
+.wi-amount.sell{color:var(--pink);}
+.wi-time{font-size:10px;color:rgba(255,255,255,0.25);margin-top:2px;}
+
+/* ── COMING SOON BANNER ── */
+.coming-banner{
+  width:100%;max-width:900px;
+  background:rgba(0,0,0,0.75);
+  border:1px solid var(--pink);
+  border-radius:16px;
+  padding:30px 24px;
+  text-align:center;
+  position:relative;overflow:hidden;
+  backdrop-filter:blur(12px);
+  box-shadow:0 0 40px rgba(255,45,120,0.15);
+}
+.coming-banner::before{
+  content:'';position:absolute;inset:-1px;
+  background:linear-gradient(135deg,var(--pink),var(--cyan),var(--pink),var(--cyan));
+  background-size:300% 300%;
+  border-radius:16px;z-index:-1;
+  animation:border-spin 4s linear infinite;
+  opacity:0.6;
+}
+@keyframes border-spin{
+  0%{background-position:0% 50%;}
+  50%{background-position:100% 50%;}
+  100%{background-position:0% 50%;}
+}
+.coming-title{
+  font-family:'Bangers',cursive;
+  font-size:clamp(32px,6vw,52px);
+  letter-spacing:6px;
+  background:linear-gradient(135deg,var(--cyan),var(--pink));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:8px;
+  text-shadow:none;
+}
+.coming-sub{
+  font-size:16px;color:rgba(255,255,255,0.6);
+  letter-spacing:2px;margin-bottom:20px;
+}
+.coming-features{
+  display:flex;flex-wrap:wrap;justify-content:center;gap:10px;
+  margin-bottom:24px;
+}
+.feat-tag{
+  font-family:'Bangers',cursive;
+  font-size:14px;letter-spacing:2px;
+  padding:6px 16px;border-radius:20px;
+  border:1px solid;
+}
+.feat-tag:nth-child(1){color:var(--lime);border-color:var(--lime);}
+.feat-tag:nth-child(2){color:var(--cyan);border-color:var(--cyan);}
+.feat-tag:nth-child(3){color:var(--pink);border-color:var(--pink);}
+.feat-tag:nth-child(4){color:var(--yellow);border-color:var(--yellow);}
+.feat-tag:nth-child(5){color:var(--purple);border-color:var(--purple);}
+
+.notify-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.input-email{
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.15);
+  border-radius:30px;
+  padding:12px 22px;
+  color:#fff;font-size:15px;font-family:'Rajdhani',sans-serif;font-weight:600;
+  width:260px;outline:none;
+  transition:border-color 0.2s;
+}
+.input-email::placeholder{color:rgba(255,255,255,0.25);}
+.input-email:focus{border-color:var(--lime);}
+.btn-notify{
+  background:linear-gradient(135deg,var(--lime),var(--cyan));
+  color:#000;font-family:'Bangers',cursive;font-size:18px;letter-spacing:2px;
+  border:none;border-radius:30px;padding:12px 28px;cursor:pointer;
+  transition:transform 0.15s,box-shadow 0.2s;
+  box-shadow:0 0 20px rgba(198,241,53,0.3);
+}
+.btn-notify:hover{transform:scale(1.05);box-shadow:0 0 40px rgba(198,241,53,0.5);}
+
+/* ── FOOTER ── */
+.footer{
+  margin-top:30px;text-align:center;
+  font-family:'Bangers',cursive;font-size:16px;letter-spacing:3px;
+  color:rgba(255,255,255,0.15);
+}
+.footer span{color:var(--lime);opacity:0.5;}
+
+/* ── FLOATING PARTICLES ── */
+.particles{position:fixed;inset:0;pointer-events:none;z-index:2;}
+.p{position:absolute;border-radius:50%;animation:float-up linear infinite;opacity:0;}
+@keyframes float-up{
+  0%{opacity:0;transform:translateY(0) scale(0);}
+  10%{opacity:0.6;}
+  90%{opacity:0.2;}
+  100%{opacity:0;transform:translateY(-100vh) scale(1.5);}
+}
+
+/* ── SOCIAL SECTION ── */
+.social-section{
+  width:100%;max-width:900px;
+  text-align:center;
+  margin-top:10px;
+  margin-bottom:24px;
+}
+.social-title{
+  font-family:'Bangers',cursive;
+  font-size:22px;letter-spacing:5px;
+  color:rgba(255,255,255,0.25);
+  margin-bottom:16px;
+}
+.social-links{
+  display:flex;gap:14px;justify-content:center;flex-wrap:wrap;
+}
+.social-btn{
+  display:flex;align-items:center;gap:10px;
+  font-family:'Bangers',cursive;font-size:16px;letter-spacing:2px;
+  padding:12px 28px;border-radius:30px;
+  border:1px solid;text-decoration:none;
+  transition:transform 0.15s,box-shadow 0.2s;
+  backdrop-filter:blur(8px);
+}
+.social-btn:hover{transform:scale(1.06);}
+.social-btn.tiktok{
+  color:var(--pink);border-color:var(--pink);
+  background:rgba(255,45,120,0.08);
+  box-shadow:0 0 18px rgba(255,45,120,0.15);
+}
+.social-btn.tiktok:hover{box-shadow:0 0 35px rgba(255,45,120,0.4);}
+.social-btn.xtwitter{
+  color:var(--cyan);border-color:var(--cyan);
+  background:rgba(0,245,255,0.08);
+  box-shadow:0 0 18px rgba(0,245,255,0.15);
+}
+.social-btn.xtwitter:hover{box-shadow:0 0 35px rgba(0,245,255,0.4);}
+
+.footer-mini{
+  margin-bottom:30px;text-align:center;
+  font-family:'Bangers',cursive;font-size:14px;letter-spacing:3px;
+  color:rgba(255,255,255,0.1);
+}
+
+/* scrollbar */
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:#0d0d0d;}
+::-webkit-scrollbar-thumb{background:var(--lime);border-radius:4px;}
+</style>
+</head>
+<body>
+
+<!-- Wall background -->
+<div class="wall">
+  <div class="splat s1"></div>
+  <div class="splat s2"></div>
+  <div class="splat s3"></div>
+  <div class="splat s4"></div>
+  <div class="splat s5"></div>
+</div>
+
+<!-- Graffiti tags -->
+<div class="tag tag1">WAGMI</div>
+<div class="tag tag2">TO THE MOON 🚀</div>
+<div class="tag tag3">NGMI ser</div>
+<div class="tag tag4">wen lambo</div>
+<div class="tag tag5">DEGEN LIFE</div>
+
+<!-- Meme characters -->
+<div class="characters">
+  <div class="char-doge">🐕</div>
+  <div class="char-pepe">🐸</div>
+  <div class="char-shib">🦊</div>
+  <div class="char-bonk">🐶</div>
+  <div class="char-wif">🎩</div>
+  <div class="char-brett" title="🐻">
+    <svg width="65" height="65" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <!-- ears -->
+      <circle cx="22" cy="25" r="14" fill="#c8a882"/>
+      <circle cx="78" cy="25" r="14" fill="#c8a882"/>
+      <circle cx="22" cy="25" r="8" fill="#e8c9a0"/>
+      <circle cx="78" cy="25" r="8" fill="#e8c9a0"/>
+      <!-- head -->
+      <circle cx="50" cy="55" r="38" fill="#c8a882"/>
+      <!-- face -->
+      <circle cx="50" cy="55" r="30" fill="#e8c9a0"/>
+      <!-- heart eyes -->
+      <text x="33" y="52" font-size="18" text-anchor="middle">❤️</text>
+      <text x="67" y="52" font-size="18" text-anchor="middle">❤️</text>
+      <!-- nose -->
+      <ellipse cx="50" cy="63" rx="6" ry="4" fill="#8b5e3c"/>
+      <!-- mouth -->
+      <path d="M44 69 Q50 75 56 69" stroke="#8b5e3c" stroke-width="2" fill="none" stroke-linecap="round"/>
+    </svg>
+  </div>
+</div>
+
+<!-- Floating particles -->
+<div class="particles" id="particles"></div>
+
+<!-- ── CONTENT ── -->
+<div class="content">
+
+  <!-- Header -->
+  <div class="logo-wrap">
+    
+    <div class="logo-title">MEME HAWK</div>
+    <div class="logo-sub">MEMECOIN TRACKER</div>
+    <div class="badge-new">🔴 LIVE BETA — COMING SOON</div>
+  </div>
+
+  <!-- Ticker -->
+  <div class="ticker-wrap">
+    <div class="ticker-track" id="ticker">
+      <span class="ticker-item up">🐕 DOGE +12.4%</span>
+      <span class="ticker-item up">🐸 PEPE +38.7%</span>
+      <span class="ticker-item dn">🦊 SHIB -4.2%</span>
+      <span class="ticker-item up">🐶 BONK +67.1%</span>
+      <span class="ticker-item up">🎩 WIF +22.3%</span>
+      <span class="ticker-item dn">🐲 BRETT -8.9%</span>
+      <span class="ticker-item up">🦁 MOCHI +145%</span>
+      <span class="ticker-item dn">🐱 POPCAT -11.2%</span>
+      <span class="ticker-item up">🐕 DOGE +12.4%</span>
+      <span class="ticker-item up">🐸 PEPE +38.7%</span>
+      <span class="ticker-item dn">🦊 SHIB -4.2%</span>
+      <span class="ticker-item up">🐶 BONK +67.1%</span>
+      <span class="ticker-item up">🎩 WIF +22.3%</span>
+      <span class="ticker-item dn">🐲 BRETT -8.9%</span>
+      <span class="ticker-item up">🦁 MOCHI +145%</span>
+      <span class="ticker-item dn">🐱 POPCAT -11.2%</span>
+    </div>
+  </div>
+
+  <!-- Stats pills -->
+  <div class="stats-row">
+    <div class="stat-pill"><div class="stat-dot"></div>1,247 Coins Tracked</div>
+    <div class="stat-pill"><div class="stat-dot"></div>89 Whale Alerts Today</div>
+    <div class="stat-pill"><div class="stat-dot"></div>14 New Launches</div>
+    <div class="stat-pill"><div class="stat-dot"></div>$2.4B Volume 24h</div>
+  </div>
+
+  <!-- Coin cards -->
+  <div class="grid">
+
+    <div class="card hot">
+      <div class="card-corner">🔥 HOT</div>
+      <div class="card-header">
+        <span class="coin-emoji">🐸</span>
+        <div class="coin-info">
+          <div class="coin-name">PEPE</div>
+          <div class="coin-sym">$PEPE • ETH</div>
+        </div>
+      </div>
+      <div class="price-row">
+        <div class="price-val">$0.00001842</div>
+        <div class="price-chg pos">+38.7%</div>
+      </div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:87%"></div></div>
+      <div class="card-stats">
+        <div class="cs-item"><div class="cs-label">Mcap</div><div class="cs-val">$7.8B</div></div>
+        <div class="cs-item"><div class="cs-label">Vol 24h</div><div class="cs-val">$892M</div></div>
+        <div class="cs-item"><div class="cs-label">Holders</div><div class="cs-val">242K</div></div>
+      </div>
+      <div class="alert-badge">🚨 3 whale buys detected in 1h</div>
+    </div>
+
+    <div class="card new">
+      <div class="card-corner">⚡ NEW</div>
+      <div class="card-header">
+        <span class="coin-emoji">🦁</span>
+        <div class="coin-info">
+          <div class="coin-name">MOCHI</div>
+          <div class="coin-sym">$MOCHI • SOL</div>
+        </div>
+      </div>
+      <div class="price-row">
+        <div class="price-val">$0.000438</div>
+        <div class="price-chg pos">+145%</div>
+      </div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:95%"></div></div>
+      <div class="card-stats">
+        <div class="cs-item"><div class="cs-label">Mcap</div><div class="cs-val">$18.2M</div></div>
+        <div class="cs-item"><div class="cs-label">Vol 24h</div><div class="cs-val">$44M</div></div>
+        <div class="cs-item"><div class="cs-label">Age</div><div class="cs-val">6h</div></div>
+      </div>
+      <div class="alert-badge">🆕 Launched 6 hours ago — trending</div>
+    </div>
+
+    <div class="card whale">
+      <div class="card-corner">🐋 WHALE</div>
+      <div class="card-header">
+        <span class="coin-emoji">🐶</span>
+        <div class="coin-info">
+          <div class="coin-name">BONK</div>
+          <div class="coin-sym">$BONK • SOL</div>
+        </div>
+      </div>
+      <div class="price-row">
+        <div class="price-val">$0.0000312</div>
+        <div class="price-chg pos">+67.1%</div>
+      </div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:72%"></div></div>
+      <div class="card-stats">
+        <div class="cs-item"><div class="cs-label">Mcap</div><div class="cs-val">$2.1B</div></div>
+        <div class="cs-item"><div class="cs-label">Vol 24h</div><div class="cs-val">$318M</div></div>
+        <div class="cs-item"><div class="cs-label">Holders</div><div class="cs-val">891K</div></div>
+      </div>
+      <div class="alert-badge">🐋 $2.4M buy — top wallet</div>
+    </div>
+
+    <div class="card hot">
+      <div class="card-corner">🔥 HOT</div>
+      <div class="card-header">
+        <span class="coin-emoji">🎩</span>
+        <div class="coin-info">
+          <div class="coin-name">WIF</div>
+          <div class="coin-sym">$WIF • SOL</div>
+        </div>
+      </div>
+      <div class="price-row">
+        <div class="price-val">$2.84</div>
+        <div class="price-chg pos">+22.3%</div>
+      </div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:60%"></div></div>
+      <div class="card-stats">
+        <div class="cs-item"><div class="cs-label">Mcap</div><div class="cs-val">$2.8B</div></div>
+        <div class="cs-item"><div class="cs-label">Vol 24h</div><div class="cs-val">$204M</div></div>
+        <div class="cs-item"><div class="cs-label">Holders</div><div class="cs-val">128K</div></div>
+      </div>
+      <div class="alert-badge">🚨 Whale accumulation detected</div>
+    </div>
+
+    <div class="card new">
+      <div class="card-corner">⚡ NEW</div>
+      <div class="card-header">
+        <span class="coin-emoji">🐱</span>
+        <div class="coin-info">
+          <div class="coin-name">POPCAT</div>
+          <div class="coin-sym">$POPCAT • SOL</div>
+        </div>
+      </div>
+      <div class="price-row">
+        <div class="price-val">$0.412</div>
+        <div class="price-chg neg">-11.2%</div>
+      </div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:32%"></div></div>
+      <div class="card-stats">
+        <div class="cs-item"><div class="cs-label">Mcap</div><div class="cs-val">$412M</div></div>
+        <div class="cs-item"><div class="cs-label">Vol 24h</div><div class="cs-val">$87M</div></div>
+        <div class="cs-item"><div class="cs-label">Holders</div><div class="cs-val">67K</div></div>
+      </div>
+      <div class="alert-badge">⚠️ Dev wallet moving — watch out</div>
+    </div>
+
+    <div class="card whale">
+      <div class="card-corner">🐋 WHALE</div>
+      <div class="card-header">
+        <span class="coin-emoji">🐕</span>
+        <div class="coin-info">
+          <div class="coin-name">DOGE</div>
+          <div class="coin-sym">$DOGE • ETH</div>
+        </div>
+      </div>
+      <div class="price-row">
+        <div class="price-val">$0.1842</div>
+        <div class="price-chg pos">+12.4%</div>
+      </div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:54%"></div></div>
+      <div class="card-stats">
+        <div class="cs-item"><div class="cs-label">Mcap</div><div class="cs-val">$26.7B</div></div>
+        <div class="cs-item"><div class="cs-label">Vol 24h</div><div class="cs-val">$1.2B</div></div>
+        <div class="cs-item"><div class="cs-label">Holders</div><div class="cs-val">6.4M</div></div>
+      </div>
+      <div class="alert-badge">🐋 $8.1M whale move confirmed</div>
+    </div>
+
+  </div>
+
+  <!-- Whale feed -->
+  <div class="whale-section">
+    <div class="section-title">
+      <span>🐋 WHALE ALERTS</span>
+      <div class="section-line"></div>
+    </div>
+    <div class="whale-feed">
+      <div class="whale-item">
+        <span class="wi-icon">🐋</span>
+        <div class="wi-body">
+          <div class="wi-title">Unknown Whale → bought BONK</div>
+          <div class="wi-wallet">0x7f3a...d92e • Solana</div>
+        </div>
+        <div class="wi-right">
+          <div class="wi-amount buy">+$2,400,000</div>
+          <div class="wi-time">2 min ago</div>
+        </div>
+      </div>
+      <div class="whale-item">
+        <span class="wi-icon">🐋</span>
+        <div class="wi-body">
+          <div class="wi-title">Top 10 holder → sold PEPE</div>
+          <div class="wi-wallet">0x2b8c...f441 • Ethereum</div>
+        </div>
+        <div class="wi-right">
+          <div class="wi-amount sell">-$890,000</div>
+          <div class="wi-time">7 min ago</div>
+        </div>
+      </div>
+      <div class="whale-item">
+        <span class="wi-icon">🦈</span>
+        <div class="wi-body">
+          <div class="wi-title">Smart money → accumulated MOCHI</div>
+          <div class="wi-wallet">0x9d1f...bb03 • Solana</div>
+        </div>
+        <div class="wi-right">
+          <div class="wi-amount buy">+$145,000</div>
+          <div class="wi-time">12 min ago</div>
+        </div>
+      </div>
+      <div class="whale-item">
+        <span class="wi-icon">🐋</span>
+        <div class="wi-body">
+          <div class="wi-title">Whale wallet → bought WIF</div>
+          <div class="wi-wallet">0x4a7e...c820 • Solana</div>
+        </div>
+        <div class="wi-right">
+          <div class="wi-amount buy">+$3,200,000</div>
+          <div class="wi-time">18 min ago</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Coming soon -->
+  <div class="coming-banner">
+    <div class="coming-title">MEME HAWK — COMING SOON</div>
+    <div class="coming-sub">THE ULTIMATE MEMECOIN INTELLIGENCE TOOL</div>
+    <div class="coming-features">
+      <div class="feat-tag">🔔 Real-time Alerts</div>
+      <div class="feat-tag">🐋 Wallet Tracker</div>
+      <div class="feat-tag">🆕 New Launch Radar</div>
+      <div class="feat-tag">⚠️ Rug Detector</div>
+      <div class="feat-tag">📊 Hawk Score</div>
+    </div>
+    <div class="notify-row">
+      <input class="input-email" type="email" placeholder="your@email.com">
+      <button class="btn-notify">NOTIFY ME</button>
+    </div>
+  </div>
+
+  <!-- Social Media -->
+  <div class="social-section">
+    <div class="social-links">
+      <a href="https://tiktok.com/@memehawk" target="_blank" class="social-btn tiktok">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.76a4.85 4.85 0 01-1.01-.07z"/></svg>
+        TIKTOK
+      </a>
+      <a href="https://x.com/memehawk" target="_blank" class="social-btn xtwitter">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.261 5.636 5.903-5.636zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        X (TWITTER)
+      </a>
+    </div>
+  </div>
+
+  <div class="footer-mini">MEMEHAWK © 2025</div>
+
+</div><!-- end .content -->
+
+<script>
+// ── PARTICLES ──
+const pc = document.getElementById('particles');
+const colors = ['#FF2D78','#00F5FF','#FF2D78','#00F5FF','#BF00FF','#FF2D78'];
+for(let i=0;i<35;i++){
+  const p = document.createElement('div');
+  p.className='p';
+  const size = Math.random()*6+2;
+  p.style.cssText=`
+    width:${size}px;height:${size}px;
+    left:${Math.random()*100}%;
+    bottom:${Math.random()*20-10}%;
+    background:${colors[Math.floor(Math.random()*colors.length)]};
+    animation-duration:${Math.random()*8+6}s;
+    animation-delay:${Math.random()*8}s;
+    box-shadow:0 0 ${size*3}px currentColor;
+  `;
+  pc.appendChild(p);
+}
+
+// ── NOTIFY BUTTON ──
+document.querySelector('.btn-notify').addEventListener('click',function(){
+  const inp = document.querySelector('.input-email');
+  if(inp.value && inp.value.includes('@')){
+    this.textContent='✅ YOU\'RE IN!';
+    this.style.background='linear-gradient(135deg,#00F5FF,#FF2D78)';
+    inp.value='';
+    inp.placeholder='See you at launch ✨';
+  } else {
+    inp.style.borderColor='#FF2D78';
+    inp.placeholder='Enter a valid email!';
+    setTimeout(()=>{inp.style.borderColor='';inp.placeholder='your@email.com';},2000);
+  }
+});
+
+// ── DEXSCREENER API ──
+const COINS = [
+  { id:'bonk',   sym:'BONK',   chain:'SOL', emoji:'🐶', type:'whale', address:'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263' },
+  { id:'wif',    sym:'WIF',    chain:'SOL', emoji:'🎩', type:'hot',   address:'EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm' },
+  { id:'popcat', sym:'POPCAT', chain:'SOL', emoji:'🐱', type:'new',   address:'7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr' },
+  { id:'myro',   sym:'MYRO',   chain:'SOL', emoji:'🐕', type:'hot',   address:'HhJpBhRRn4g56VsyLuT8DL5Bv31HkXqsrahTTUCZeZg4' },
+  { id:'brett',  sym:'BRETT',  chain:'SOL', emoji:'🐸', type:'new',   address:'BRETTqYJxZ3qZzFrcJnCHGSXBFDnSgVRQJdEFaGV6YtD' },
+  { id:'mew',    sym:'MEW',    chain:'SOL', emoji:'🐱', type:'whale', address:'MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5' },
+];
+
+const CARD_LABELS = { hot:'🔥 HOT', whale:'🐋 WHALE', new:'⚡ NEW' };
+
+function fmt(n){
+  if(!n) return '—';
+  if(n>=1e9) return '$'+(n/1e9).toFixed(2)+'B';
+  if(n>=1e6) return '$'+(n/1e6).toFixed(1)+'M';
+  if(n>=1e3) return '$'+(n/1e3).toFixed(1)+'K';
+  return '$'+n.toFixed(2);
+}
+
+function fmtPrice(p){
+  if(!p) return '—';
+  if(p<0.000001) return '$'+p.toExponential(2);
+  if(p<0.01) return '$'+p.toFixed(8).replace(/0+$/,'');
+  if(p<1) return '$'+p.toFixed(4);
+  return '$'+p.toFixed(2);
+}
+
+function barWidth(chg){
+  if(!chg) return 30;
+  const abs = Math.abs(chg);
+  return Math.min(100, Math.max(10, abs * 1.5 + 20));
+}
+
+function alertText(coin, chg){
+  if(coin.type==='whale') return `🐋 Whale activity detected`;
+  if(coin.type==='new')   return `⚡ Trending on ${coin.chain}`;
+  if(chg>0) return `🚨 Bullish momentum +${chg.toFixed(1)}%`;
+  return `⚠️ Watch — selling pressure`;
+}
+
+async function fetchCoin(coin){
+  try {
+    const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${coin.address}`);
+    const data = await res.json();
+    const pairs = data.pairs;
+    if(!pairs || pairs.length===0) return null;
+    const pair = pairs.sort((a,b)=>(b.liquidity?.usd||0)-(a.liquidity?.usd||0))[0];
+    return {
+      price:  parseFloat(pair.priceUsd)||0,
+      chg24:  pair.priceChange?.h24||0,
+      mcap:   pair.marketCap||pair.fdv||0,
+      vol24:  pair.volume?.h24||0,
+      logo:   pair.info?.imageUrl || null,
+      url:    pair.url || `https://dexscreener.com/search?q=${coin.address}`,
+    };
+  } catch(e){ return null; }
+}
+
+function renderCard(coin, data){
+  const chg = data?.chg24 ?? 0;
+  const chgClass = chg>=0 ? 'pos' : 'neg';
+  const chgStr = (chg>=0?'+':'')+chg.toFixed(1)+'%';
+  const logoHtml = data?.logo
+    ? `<img src="${data.logo}" class="coin-logo" alt="${coin.sym}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">`
+    : '';
+  const emojiHtml = `<span class="coin-emoji-fallback" style="${data?.logo ? 'display:none' : ''}">${coin.emoji}</span>`;
+  const clickAttr = data?.url ? `onclick="window.open('${data.url}','_blank')" style="cursor:pointer"` : '';
+
+  return `
+    <div class="card ${coin.type}" ${clickAttr}>
+      <div class="card-corner">${CARD_LABELS[coin.type]}</div>
+      ${data?.url ? '<div class="card-link-hint">↗ View on DexScreener</div>' : ''}
+      <div class="card-header">
+        <span class="coin-emoji-wrap">${logoHtml}${emojiHtml}</span>
+        <div class="coin-info">
+          <div class="coin-name">${coin.sym}</div>
+          <div class="coin-sym">$${coin.sym} • ${coin.chain}</div>
+        </div>
+      </div>
+      <div class="price-row">
+        <div class="price-val">${data ? fmtPrice(data.price) : '<span style="opacity:.4">Loading…</span>'}</div>
+        <div class="price-chg ${chgClass}">${data ? chgStr : '—'}</div>
+      </div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:0%"></div></div>
+      <div class="card-stats">
+        <div class="cs-item"><div class="cs-label">Mcap</div><div class="cs-val">${data ? fmt(data.mcap) : '—'}</div></div>
+        <div class="cs-item"><div class="cs-label">Vol 24h</div><div class="cs-val">${data ? fmt(data.vol24) : '—'}</div></div>
+        <div class="cs-item"><div class="cs-label">Chain</div><div class="cs-val">${coin.chain}</div></div>
+      </div>
+      <div class="alert-badge">${data ? alertText(coin, chg) : '⏳ Fetching data…'}</div>
+    </div>`;
+}
+
+async function loadCards(){
+  const grid = document.querySelector('.grid');
+  // render skeleton cards first
+  grid.innerHTML = COINS.map(c => renderCard(c, null)).join('');
+
+  // fetch all coins in parallel
+  const results = await Promise.all(COINS.map(c => fetchCoin(c)));
+
+  // re-render with real data
+  grid.innerHTML = COINS.map((c,i) => renderCard(c, results[i])).join('');
+
+  // animate bars
+  setTimeout(()=>{
+    grid.querySelectorAll('.bar-fill').forEach((b,i)=>{
+      const chg = results[i]?.chg24 ?? 0;
+      const w = barWidth(chg);
+      b.style.width = w+'%';
+      if(w >= 95){
+        b.classList.add('bar-max');
+      } else {
+        b.classList.remove('bar-max');
+      }
+    });
+  }, 100);
+}
+
+async function loadTicker(){
+  const track = document.getElementById('ticker');
+  try {
+    const res = await fetch('https://api.dexscreener.com/latest/dex/tokens/'+
+      COINS.map(c=>c.address).join(','));
+    const data = await res.json();
+    if(!data.pairs) return;
+
+    const byAddr = {};
+    data.pairs.forEach(p=>{
+      const addr = p.baseToken?.address?.toLowerCase();
+      if(!byAddr[addr]) byAddr[addr] = p;
+    });
+
+    const items = COINS.map(coin=>{
+      const pair = byAddr[coin.address.toLowerCase()];
+      const chg = pair?.priceChange?.h24 ?? null;
+      const cls = chg===null ? '' : chg>=0 ? 'up' : 'dn';
+      const chgStr = chg===null ? '' : (chg>=0?'+':'')+chg.toFixed(1)+'%';
+      return `<span class="ticker-item ${cls}">${coin.emoji} ${coin.sym} ${chgStr}</span>`;
+    });
+    // duplicate for seamless loop
+    track.innerHTML = [...items,...items].join('');
+  } catch(e){}
+}
+
+// ── FLASH price updates ──
+function flashPrices(){
+  document.querySelectorAll('.price-val').forEach(el=>{
+    el.style.transition='color 0.3s';
+    el.style.color='#00F5FF';
+    setTimeout(()=>{el.style.color='#fff';},600);
+  });
+}
+
+// ── INIT ──
+window.addEventListener('load', async ()=>{
+  await Promise.all([loadCards(), loadTicker()]);
+  // refresh every 30s
+  setInterval(()=>{ loadCards(); loadTicker(); flashPrices(); }, 30000);
+});
+</script>
+</body>
+</html>
